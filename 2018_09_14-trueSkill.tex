@@ -1,0 +1,989 @@
+\documentclass[shownotes]{beamer}
+
+\mode<presentation>
+{
+%   \usetheme{Madrid}      % or try Darmstadt, Madrid, Warsaw, ...
+%   \usecolortheme{default} % or try albatross, beaver, crane, ...
+%   \usefonttheme{default}  % or try serif, structurebold, ...
+ \usetheme{Antibes}
+ \usecolortheme[rgb={0.6,0.75,0}]{structure}%divido los RGB por 252
+ \setbeamercolor{block title}{fg=white,bg=azuluca}
+ \xdefinecolor{azuluca}{rgb}{0.02, 0.2, 0.18}
+ \definecolor{greenblue}{rgb}{0.1, 0.55, 0.5}
+
+ \setbeamercolor{palette quaternary}{fg=white,bg=azuluca}
+ \setbeamertemplate{caption}[numbered]
+ \setbeamertemplate{navigation symbols}{}
+
+}
+
+\newcommand\hfrac[2]{\genfrac{}{}{0pt}{}{#1}{#2}}
+
+\newtheorem{midef}{Definition}
+\newtheorem{miteo}{Theorem}
+\newtheorem{mipropo}{Proposition}
+
+\usepackage[utf8]{inputenc} %Para acentos en UTF8 (Prueba: á é í ó ú Á É Í Ó Ú ñ Ñ)
+\usepackage[spanish]{babel}
+\usepackage{url}
+%\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{float} % para que los gr\'aficos se queden en su lugar con [H]
+\usepackage{subcaption}
+\usepackage{wrapfig}
+\usepackage{color}
+\usepackage{amsmath} %para escribir funci\'on partida
+\usepackage{blkarray}
+\usepackage{hyperref} % para inlcuir links dentro del texto
+\usepackage{mdframed} 
+\usepackage{comment}
+\usepackage{amsfonts} % mathbb{N} -> conjunto de los n\'umeros naturales  
+\usepackage{enumerate}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{framed}
+\usepackage{mdframed}
+\usepackage{bm}
+\usepackage{transparent}
+
+\usepackage[absolute,overlay]{textpos} %no funciona
+\setlength{\TPHorizModule}{1mm} %128mm  mitad: 64 
+\setlength{\TPVertModule}{1mm}	%96mm  mitad 48
+
+\setlist[enumerate,1]{start=0} % only outer nesting level
+
+\usepackage{tikz} % Para graficar, por ejemplo bayes networks
+\usetikzlibrary{bayesnet} % Para que ande se necesita copiar el archivo  tikzlibrarybayesnet.code.tex en la misma carpeta
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%
+% Incompatibles con textpos
+%
+%\usepackage{todonotes}
+%\usepackage{tikz} % Para graficar, por ejemplo bayes networks
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+\usepackage[absolute,overlay]{textpos} %no funciona
+\setlength{\TPHorizModule}{1mm} %128mm  mitad: 64 
+\setlength{\TPVertModule}{1mm}	%96mm  mitad 48
+% 
+% 
+\captionsetup[figure]{labelformat=empty}
+
+\hypersetup{
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=white,          % color of internal links (change box color with linkbordercolor)
+    citecolor=green,        % color of links to bibliography
+    filecolor=magenta,      % color of file links
+    urlcolor=cyan           % color of external links
+}
+% 
+% http://latexcolor.com/
+\definecolor{lightseagreen}{rgb}{0.13, 0.7, 0.6.5}
+\definecolor{greenblue}{rgb}{0.1, 0.55, 0.5}
+\definecolor{redgreen}{rgb}{0.6, 0.4, 0.}
+\definecolor{greenred}{rgb}{0.4, 0.7, 0.}
+\definecolor{redblue}{rgb}{0.4, 0., .4}
+\definecolor{tangelo}{rgb}{0.98, 0.3, 0.0}
+\definecolor{git}{rgb}{0.94, 0.309, 0.2}
+% 
+\setbeamercolor{structure}{fg=greenblue}
+
+\newcommand\Wider[2][3em]{%
+\makebox[\linewidth][c]{%
+  \begin{minipage}{\dimexpr\textwidth+#1\relax}
+  \raggedright#2
+  \end{minipage}%
+  }%
+}
+
+
+\usefonttheme[onlymath]{serif}
+
+\title[Estimaci\'on de habilidad]{Toda la matem\'atica detr\'as de TrueSkill}
+
+\author[Gustavo Landfried]{Gustavo Landfried \\ \vspace{0.2cm}
+\scriptsize Lic. Ciencias Antropol\'ogicas. \\
+Doctorando Ciencias de la Computaci\'on \\
+\vspace{-0.3cm}}
+\institute[DC-ICC-CONICET]{Instituto de Ciencias de la Computaci\'on (UBA -- CONICET) \vspace{-0.3cm}}
+\date{}
+
+\begin{document}
+
+\begin{frame}[noframenumbering]
+ \vspace{-0.5cm}
+  \begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.50\textwidth}
+       \includegraphics[page=1,width=\textwidth]{static/manuscript.png} 
+     \end{subfigure}
+   \end{figure} 
+
+\vspace{-1cm}
+\maketitle
+
+ \begin{textblock}{80}(72,82)
+ \includegraphics[width=0.2\textwidth]{images/logo_licar} 
+ \end{textblock}
+  \begin{textblock}{80}(42,82)
+ \includegraphics[width=0.2\textwidth]{images/logo_version_02} 
+\end{textblock}
+
+\end{frame}
+\small
+
+\section{Problema}
+
+\begin{frame}
+
+\begin{mdframed}[backgroundcolor=black!15]
+ \centering \Large
+ ¿C\'omo estimar la habilidad de las personas?
+\end{mdframed}
+
+\vspace{0.25cm}
+
+\begin{center}
+ \large Depende del tipo de tarea
+\end{center}
+
+\begin{enumerate}
+ \item Tarea fija
+ \item Relativa a otros
+\end{enumerate}
+
+  \begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.25\textwidth}
+       \includegraphics[page=1,width=\textwidth]{static/persona_caja.jpeg} 
+     \caption*{Tarea fija}
+     \end{subfigure}
+     \hspace{1cm}
+     \begin{subfigure}[b]{0.25\textwidth}
+       \includegraphics[page=2,width=\textwidth]{static/persona_persona.jpeg} 
+       \caption*{Relativa a otros}
+     \end{subfigure}
+   \end{figure} 
+\end{frame}
+
+
+\begin{frame}[noframenumbering]
+
+\begin{mdframed}[backgroundcolor=black!15]
+ \centering \Large
+ ¿C\'omo estimar la habilidad de las personas?
+\end{mdframed}
+
+\vspace{0.25cm}
+
+\begin{center}
+ \large Depende del tipo de tarea
+\end{center}
+
+\begin{enumerate}
+ \item Tarea fija
+ \item \textbf{Relativa a otros}
+\end{enumerate}
+
+  \begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.25\textwidth}
+       \includegraphics[page=1,width=\textwidth]{static/persona_caja.jpeg} 
+     \caption*{Tarea fija}
+     \end{subfigure}
+     \hspace{1cm}
+     \begin{subfigure}[b]{0.25\textwidth}
+       \includegraphics[page=2,width=\textwidth]{static/persona_persona.jpeg} 
+       \caption*{\textbf{Relativa a otros}}
+     \end{subfigure}
+   \end{figure} 
+\end{frame}
+
+\section{Elo}
+
+\begin{frame}
+
+\begin{center}
+ \large Sistema de puntuaci\'on Elo
+\end{center}
+
+
+  \begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.4\textwidth}
+       \includegraphics[page=1,width=\textwidth]{images/elo.jpeg} 
+       \caption*{Arpad Elo}
+     \end{subfigure}
+\end{figure}
+
+
+\end{frame}
+
+\subsection{Modelo}
+
+\begin{frame}
+
+\begin{center}
+ \Large Modelo
+\end{center}
+
+
+\begin{equation}
+ \large p \sim N(s,\beta)
+\end{equation}
+
+\begin{itemize} \normalsize
+ \item[$p$)]  \textbf{Rendimiento} o \emph{performance}
+ \item[$s$)]  \textbf{Habilidad} o \emph{skill}
+ \item[$\beta$)] Ruido 
+\end{itemize}
+
+\begin{equation}
+ \large r_{ij} = \mathbb{I}_{\{p_i > p_j \}} = \mathbb{I}_{\{d_{ij} > 0 \}}
+\end{equation}
+
+\begin{itemize} \normalsize
+ \item[$r$)]  \textbf{Resultado}
+ \item[$d$)]  Diferencia $d_{ij} = p_i - p_j$
+\end{itemize}
+
+
+\end{frame}
+
+
+
+\subsection{Probabilidad de ganar}
+
+
+\begin{frame}
+
+\begin{center}
+ \large Probabilidad de ganar (gr\'afica)
+\end{center}
+\vspace{-0.3cm}
+\begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.7\textwidth}
+       \includegraphics[page=1,width=\textwidth]{figures/probaOfWin_2D} 
+     \end{subfigure}
+  \end{figure}
+
+\end{frame}
+
+
+\begin{frame}
+
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large Probabilidad de ganar (anal\'itica)
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\begin{equation*}
+\begin{split}
+  d_{ij} & \sim \iint \mathbb{I}(d_{ij}=p_i-p_j) N(p_i|s_i,\beta^2)N(p_j|s_j,\beta^2) \, dp_i \, dp_j \\
+  \onslide<2->{&\overset{1}{=} \int N(d_{ij}+p_j|s_i,\beta^2) N(p_j|s_j,\beta^2) dp_j}\\
+  \onslide<3->{&\overset{2}{=} \int N(p_j|s_i-d_{ij},\beta^2) N(p_j|s_j,\beta^2) dp_j} \\
+  \onslide<4->{&\overset{*}{=} \int \underbrace{N(d_{ij}|s_i-s_j,2\beta^2)}_{\text{const.}} \underbrace{N(p_j|\mu_{-},\sigma^2_{-})dp_j}_{1}}
+\end{split}
+\end{equation*}
+\vspace{0.25cm}
+\onslide<5->{
+\begin{equation}
+d_{ij} \sim N(d_{ij}|s_i-s_j,2\beta^2)
+\end{equation}}
+
+\end{frame}
+
+\begin{frame}
+\vspace{-0.1cm}
+\begin{equation}
+P(p_i>p_j|s_i,s_j) = 1 - \Phi\left( \frac{0-(s_i - s_j)}{\sqrt{2}\beta} \right) =  \Phi\left( \frac{s_i - s_j}{\sqrt{2}\beta} \right) 
+\end{equation}
+\vspace{-0.1cm}
+\begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.65\textwidth}
+       \includegraphics[page=1,width=\textwidth]{figures/probaOfWin} 
+     \end{subfigure}
+\end{figure}
+
+\end{frame}
+
+\subsection{Actualizaci\'on}
+ 
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large Actualizaci\'on 
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\begin{equation*}
+\Delta = \underbrace{(2r_{ij}-1)}_{\hfrac{\text{\textbf{Direcci\'on} }}{\text{(Signo del resultado)}}} \, \underbrace{(1 - P(r_{ij}|s_i,s_j))}_{\hfrac{\text{\textbf{Magnitud}}}{\text{(Sorpresa del resultado)}}}
+\end{equation*}
+
+\vspace{0.25cm}
+
+\begin{equation}
+s_i^{\text{new}} = s_i^{\text{old}} + K \Delta
+\end{equation}
+
+\vspace{0.25cm}
+
+\onslide<2->{
+\begin{center}
+\large Modelo de soluci\'on  
+\end{center}
+\vspace{-0.1cm}
+\begin{mdframed}[backgroundcolor=black!20]
+\begin{center}
+ Estimador $\hfrac{\longrightarrow}{\longleftarrow}$ Predicci\'on
+\end{center}
+\end{mdframed}
+
+
+\begin{itemize}
+ \item[$\bullet$] El estimador hace a la predicci\'on
+ \item[$\bullet$] La predicci\'on hace al estimador
+\end{itemize}
+}
+
+
+
+\end{frame}
+
+\subsection{Problemas}
+
+\begin{frame}
+
+{\large Debilidades del sistema Elo}
+
+\begin{enumerate}
+  \item La actualizaci\'on depende de un valor arbitrario, $K$
+  \item No hay noci\'on de intervalo de confianza
+  \item Solo sirve para competencias individuales
+ \end{enumerate}
+
+ 
+\end{frame}
+
+
+\section{TrueSkill}
+% 
+% \begin{frame}
+%  
+% \begin{center}
+%  \Large TrueSkill
+% %\includegraphics[page=1,width=0.25\textwidth]{images/microsoft} 
+% \end{center}
+% 
+% \begin{figure}[H]     
+%      \centering
+%      \begin{subfigure}[b]{0.3\textwidth}
+%        \includegraphics[page=1,width=\textwidth]{images/ralfHerbrich} 
+%      \caption*{Ralf Herbrich}
+%      \end{subfigure}
+%      \begin{subfigure}[b]{0.3\textwidth}
+%        \includegraphics[page=1,width=\textwidth]{images/tomMinka} 
+%      \caption*{Tom Minka}
+%      \end{subfigure}
+%      \begin{subfigure}[b]{0.3\textwidth}
+%        \includegraphics[page=1,width=\textwidth]{images/thoreGraepel} 
+%      \caption*{Thore Graepel}
+%      \end{subfigure}
+%      
+%   \end{figure}
+%  
+% \end{frame}
+
+
+\subsection{Modelo}
+
+\begin{frame}
+
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large Modelo TrueSkill
+\end{center}
+\end{textblock}
+\vspace{0.5cm}
+
+\begin{figure}[H]
+  \scalebox{.85}{\input{graph/trueskill_versionGeneral.tex}}
+  %\caption{\small Modelo \texttt{Trueskill} sobre habilidad de jugadores que compiten entre si}
+  \label{modelo_trueskill}
+\end{figure}
+
+\begin{equation}
+ P(s|o,A) = \frac{P(o|s,A)P(s)}{P(o|A)}
+\end{equation}
+
+
+\end{frame}
+
+ \subsection{Personas}
+ 
+ \begin{frame}
+ 
+  \begin{equation*}
+   p_i \sim  N(s_i, \beta^2)= \int N(p_i|s_i,\beta^2) N(s_i|\mu_i,\sigma_i^2) ds_i 
+  \end{equation*}
+
+ 
+ \Wider[4em]{
+ \onslide<2->{
+\begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.32\textwidth}
+       \includegraphics[page=1,width=1\textwidth]{figures/paso_1_multiplicacion_normales} 
+     \end{subfigure}
+     \onslide<3->{
+     \begin{subfigure}[b]{0.32\textwidth}
+       \includegraphics[page=1,width=1\textwidth]{figures/paso_1_multiplicacion_normales_image} 
+     \end{subfigure}}
+     \onslide<4->{
+     \begin{subfigure}[b]{0.32\textwidth}
+       \includegraphics[page=1,width=\textwidth]{figures/paso_1_multiplicacion_normales_p} 
+     \end{subfigure}}
+  \end{figure}
+}
+}
+  
+  \begin{equation*}
+  \begin{split}
+\onslide<5->{&\overset{1}{=} \int N(s_i|p_i,\beta^2) N(s_i|\mu_i,\sigma_i^2) ds_i \\}
+\onslide<6->{& \overset{*}{=} \int \underbrace{N(p_i|\mu_i,\beta^2 + \sigma_i^2)}_{\text{const.}} \underbrace{N(s_i | \mu_*,\sigma_{*}^2)ds_i}_{1}}
+  \end{split}
+ \end{equation*}
+
+ \onslide<7->{ 
+ \begin{equation}
+  p_i \sim N(\mu_i,\beta^2 + \sigma_i^2)
+ \end{equation}
+ }
+
+ 
+ \end{frame}
+
+\subsection{Equipos}
+
+\begin{frame}
+ 
+\begin{equation*}
+ t_e \sim \int \dots \int \mathbb{I}(t_e = \sum_{j \in A_e} p_j) \big( \prod_{i \in A_e} N(p_i|\mu_i,\beta^2 + \sigma_i^2) \big) d\vec{p}
+\end{equation*}
+
+ Equipo de 2
+ \vspace{-0.5cm}
+\begin{columns}
+\hspace{-2cm}
+\begin{column}{0.33\textwidth}
+  
+  \begin{figure}[H]     
+      \centering
+      \vspace{-.25cm}
+      \begin{subfigure}[b]{1\textwidth}
+	\includegraphics[page=1,width=1.05\textwidth]{figures/paso_3_suma_normales_image} 
+      \end{subfigure}
+    \end{figure}
+  
+\end{column}
+\hspace{-2cm}
+\begin{column}{0.66\textwidth}
+
+  \footnotesize
+  \begin{equation*}
+  \begin{split}
+  \onslide<2->{& = \iint \mathbb{I}(t_e = p_i + p_j) N(p_i|\mu_i,\beta^2 + \sigma_i^2)N(p_j|\mu_j,\beta^2 + \sigma_j^2) dp_idp_j \\}
+  \onslide<3->{& \overset{1}{=} \int N(p_i|\mu_i,\beta^2 + \sigma_i^2) N(t_e - p_i|\mu_j,\beta^2 + \sigma_j^2) dp_i   \\}
+  \onslide<4->{& \overset{2}{=} \int N(p_i|\mu_i,\beta^2 + \sigma_i^2) N(p_i|t_e - \mu_j,\beta^2 + \sigma_j^2) dp_i   \\}
+  \onslide<5->{& \overset{*}{=} \int \underbrace{N(t_e|\mu_i+\mu_j,2\beta^2 + \sigma_i^2 + \sigma_j^2)}_{\text{const.}} \underbrace{N(p_i|\mu_{*},\sigma_{*}^2) dp_i}_{1} \\ }
+  \end{split}
+  \end{equation*} 
+\end{column}
+\end{columns}
+
+\onslide<6->{
+General (por inducci\'on)
+\begin{equation}
+ t_e \sim  N \Big( \sum_{i\in A_e } \mu_i, \sum_{i \in A_e} \beta^2 + \sigma_i^2 \Big)
+\end{equation}
+}
+
+ \end{frame}
+
+
+\subsection{Resultado}
+
+
+
+\begin{frame}
+
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large Probabilidad de ganar
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+Diferencia
+\footnotesize
+ \Wider[6em]{
+ \begin{equation*}
+ d_{ab} \sim \iint \mathbb{I}(d_{ab}=t_a -t_b)N\Big(t_a|\sum_{i\in A_a} \mu_i,\sum_{i\in A_a} \beta^2 + \sigma_i^2\Big)\,N\Big(t_b|\sum_{i\in A_b} \mu_i,\sum_{i\in A_b} \beta^2 + \sigma_i^2\Big) dt_adt_b 
+\end{equation*}
+}
+\onslide<2->{
+\begin{equation}
+d_{ab} \sim N\Bigg( \underbrace{\sum_{i\in A_a} \mu_i - \sum_{i\in A_b} \mu_i }_{\text{Diferencia esperada} (\delta)} ,\underbrace{\sum_{i\in A_a\cup A_b} \beta^2 + \sigma_i^2}_{\text{Varianza total} (\vartheta)} \Bigg)
+\end{equation}
+}
+\vspace{0.5cm}
+\onslide<3->{
+Resultado
+\begin{equation}
+ P(r_{ab}=1|A) = P(d_{ab} > 0 | A) = \Phi\left( \frac{\delta}{\sqrt{2\vartheta} } \right)
+\end{equation}
+}
+\end{frame}
+
+\subsection{Actualizaci\'on}
+
+\begin{frame}
+ 
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \Large Posterior
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\begin{mdframed}[backgroundcolor=black!20]
+\centering \large
+\vspace{0.1cm}
+ ¿Alquien sabe c\'omo calcular la posterior?
+ \vspace{0.1cm}
+\end{mdframed}
+\vspace{1.5cm}
+\begin{equation*}
+ P(s_i|o,A) = \frac{P(o|s_i,A)P(s_i)}{P(o|A)}
+\end{equation*}
+ 
+ 
+\end{frame}
+
+
+\section{Sum-product algorithm}
+
+\subsection{Factor graph}
+
+\begin{frame}
+ 
+\begin{textblock}{128}(0,9)
+\begin{center}
+ \large Sum-product algorithm
+\end{center}
+\end{textblock}
+\vspace{1cm}
+
+\begin{equation*}
+\footnotesize
+\begin{split} 
+%&g: R_1 \times \dots \times R_n \longmapsto D \\ 
+g(x_1,\dots,x_n) = \prod_{j \in J} f_j(X) 
+\end{split}
+\end{equation*}
+
+Ejemplo
+\begin{equation*}
+g(x_1,x_2,x_3,x_4,x_5) = f_A(x_1)f_B(x_2)f_C(x_1,x_2,x_3)f_D(x_3,x_4)f_E(x_3,x_5)
+\end{equation*}
+\vspace{-0.5cm}
+\begin{figure}[H]
+\centering
+  \caption*{\scriptsize Factor graph}
+  \vspace{-0.1cm}
+  \scalebox{.74}{\input{graph/factorGraph.tex}}
+\end{figure}
+
+\pause
+
+
+\begin{framed}
+Un factor graph sin ciclos codifica:
+\begin{itemize}
+ \item[$\bullet$] La facotirzaci\'on de la funci\'on $g(x_1,\dots,x_n)$
+ \item[$\bullet$] \textbf{Las operaciones para computar sus marginales} $g_i(x_i)$
+\end{itemize} 
+\end{framed}
+
+ 
+\end{frame}
+
+\subsection{Marginales}
+
+\begin{frame}
+
+\begin{center}
+ C\'omputo de marginales
+\end{center}
+
+
+\begin{equation}
+g_i(x_i) = \prod_{h \in n(x_i)} m_{h \rightarrow x_i}
+\end{equation} 
+
+\begin{center}
+-----------------------------------------------------------------------
+\end{center}
+
+
+\begin{equation}\label{m_v_f} 
+m_{x \rightarrow f}(x) = \prod_{h \in n(x) \setminus \{f\} } m_{h \rightarrow x}(x)
+\end{equation}
+\begin{equation}\label{m_f_v}  
+m_{f \rightarrow x}(x) = \sum_{X\setminus \{x\} } \left( f(X) \prod_{h \in n(f) \setminus \{x\} } m_{h \rightarrow f}(h) \right)
+\end{equation}
+
+Donde,
+\begin{description}
+ \item[$m_{x \rightarrow f}(x)$ :] Mensaje enviado por el nodo variable $x$ al nodo factor $f$
+ \item[$m_{f \rightarrow x}(x)$ :] Mensaje enviado por un nodo factor $f$ a un nodo variable $x$.
+ \item[$n(v)$ :] Conjunto de nodos vecinos a $v$.
+\end{description}
+
+
+\end{frame}
+
+
+\subsection{Ejemplo}
+
+\begin{frame}
+
+\begin{equation*}
+g(x_1,x_2,x_3,x_4,x_5) = f_A(x_1)f_B(x_2)f_C(x_1,x_2,x_3)f_D(x_3,x_4)f_E(x_3,x_5)
+\end{equation*}
+
+\vspace{0.1cm}
+
+\begin{center}
+Marginales 
+\end{center}
+\vspace{-0.5cm}
+\begin{figure}[H]
+\centering
+  \begin{subfigure}[b]{0.48\textwidth} 
+  \centering
+    \scalebox{0.6}{\input{graph/factorGraph_margin1.tex}}
+    \caption*{$g_1(x_1)$}
+  \end{subfigure} 
+\ \ \
+  \begin{subfigure}[b]{0.48\textwidth} 
+  \centering
+    \scalebox{0.6}{\input{graph/factorGraph_margin3.tex}}
+   \caption*{$g_3(x_3)$}
+  \end{subfigure} 
+\end{figure}
+% 
+% {\footnotesize
+% \begin{equation*}
+%  g_1(x_1) = f_A(x_1) \left(\sum_{\setminus x_1} f_B(x_2) f_C(x_1,x_2,x_3) \left( \sum_{\setminus x_3} f_D(x_3,x_4) \right) \left( \sum_{\setminus x_3} f_E(x_3,x_5) \right) \right)
+% \end{equation*}
+% 
+% \begin{equation*}
+%  g_3(x_3) =  \left( \sum_{\setminus x_3} f_A(x_1)f_B(x_2)f_C(x_1,x_2,x_3)  \right) \left( \sum_{\setminus x_3} f_D(x_3,x_4) \right) \left( \sum_{\setminus x_3} f_E(x_3,x_5) \right) 
+% \end{equation*}
+% }
+\end{frame}
+
+\section{TrueSkill}
+
+\subsection{Factor graph}
+
+\begin{frame}
+
+\Wider[4em]{
+\begin{figure}[H]
+\centering
+  \begin{subfigure}[b]{1\textwidth} 
+  \centering
+    \scalebox{0.8}{\input{graph/trueskill_factorGraph_versionGeneral.tex}}
+  \end{subfigure} 
+\end{figure}
+}
+
+\pause
+\vspace{0.75cm}
+
+\Wider[4em]{
+\begin{figure}[H]
+\centering
+  \begin{subfigure}[b]{1\textwidth} 
+  \centering
+    \scalebox{0.75}{\input{graph/trueskill_factorGraph_2equiops.tex}}
+  \end{subfigure} 
+\end{figure}
+}
+
+\end{frame}
+
+\subsection{Pasaje de mensajes}
+
+\begin{frame}
+
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large $\bm{m_{f_r \rightarrow d}(d)}$
+ \vspace{0.3cm}
+ \scriptsize \transparent{0.4}
+ $$m_{f \rightarrow x}(x) = \int\dots\int f(X) \prod_{h \in n(f) \setminus \{x\} } m_{h \rightarrow f}(h) \ d_{X\setminus \{x\} }$$
+\end{center}
+\end{textblock}
+\vspace{1cm}
+
+\begin{equation}
+m_{f_r \rightarrow d_k}(d_k) = \mathbb{I}(d_k > 0)
+\end{equation}
+ 
+\end{frame}
+
+
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large $\bm{m_{d \rightarrow f_{t}}(d)}$
+ \vspace{0.3cm}
+ \scriptsize \transparent{0.4}
+ $$m_{f \rightarrow x}(x) = \prod_{h \in n(x) \setminus \{f\} } m_{h \rightarrow x}(x) \ $$
+\end{center}
+\end{textblock}
+\vspace{1cm}
+
+\begin{equation}
+m_{d_k \rightarrow f_{t_a}}(d_k) = \mathbb{I}(d_k > 0)
+\end{equation}
+
+\end{frame}
+
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large $\bm{m_{f_d \rightarrow t}(t)}$
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\Wider[4em]{
+\begin{equation*}
+\begin{split}
+m_{f_{d_1} \rightarrow t_a}(t_a) &= \iint \mathbb{I}(d_1 = t_a - t_b) \mathbb{I}(d_1 > 0) N\Big(t_b | \sum_{i \in A_b} \mu_i , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big) dt_b dd_1 \\
+\onslide<2->{&\overset{1}{=}\int \mathbb{I}( t_a > t_b)  N\Big(t_b | \sum_{i \in A_b} \mu_i , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big)}
+\end{split}
+\end{equation*}
+
+}
+
+\Wider{
+
+
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\onslide<3->{  
+  \begin{figure}[H]
+  \centering
+    \begin{subfigure}[b]{1\textwidth} 
+    \centering
+      \includegraphics[width=\textwidth]{figures/m_d_ta} 
+    \end{subfigure} 
+  \end{figure}
+}
+\end{column}
+\hspace{-1cm}
+\begin{column}{0.66\textwidth}
+\onslide<4->{  
+  \begin{equation}
+    m_{f_{d_1} \rightarrow t_a}(t_a) \overset{2}{=} \Phi \Big(t_a| \sum_{i \in A_b} \mu_i , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big)
+  \end{equation} 
+}
+\end{column}
+\end{columns}
+
+}
+ 
+\end{frame}
+
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large $\bm{m_{f_t \rightarrow p}(p)}$
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\Wider[6em]{
+\footnotesize
+\begin{equation*}
+ \begin{split}
+  m_{f_{t_a} \rightarrow p_1}(p_1) =& \iint \mathbb{I}( t_a = p_1 + p_2) \Phi \Big(t_a| \sum_{i \in A_b} \mu_i , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big) \, N(p_2| \mu_2, \beta^2 + \sigma_2^2 ) \, dt_a dp_2 \\
+  \onslide<2->{=&\int \Phi \Big(p1+p_2| \sum_{i \in A_b} \mu_i , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big) \, N(p_2| \mu_2, \beta^2 + \sigma_2^2 ) \, dp_2}
+  \end{split}
+\end{equation*}
+}
+
+\end{frame}
+
+
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large $\bm{m_{f_t \rightarrow p}(p)}$
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\Wider[4em]{
+\footnotesize
+\begin{equation*}
+\begin{split}
+\frac{\partial m_{f_{t_a} \rightarrow p_1}(p_1)}{\partial p_1} &\overset{1}{=} \frac{\partial}{\partial p_1} \int  \Phi \Big(p_1 + p_2| \sum_{i \in A_b} \mu_i , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big) N(p_2| \mu_2, \beta^2 + \sigma_2^2 ) \, dp_2 \\
+\onslide<2->{&\overset{2}{=} \int  N(p_2| \mu_2, \beta^2 + \sigma_2^2 ) \, \frac{\partial}{\partial p_1}\Phi \Big(p_1| \sum_{i \in A_b} \mu_i - p_2 , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big)  \, dp_2   \\}
+\onslide<3->{&\overset{3}{=} \int  N(p_2| \mu_2, \beta^2 + \sigma_2^2 ) \, N\Big(p_1| \sum_{i \in A_b} \mu_i - p_2 , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big)  \, dp_2  \\}
+\onslide<4->{&\overset{4}{=} \int  N(p_2| \mu_2, \beta^2 + \sigma_2^2 ) \, N\Big(p_2| \sum_{i \in A_b} \mu_i - p_1 , \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big)  \, dp_2  \\}
+\onslide<5->{&\overset{*}{=} N\Big(p_1| \sum_{i \in A_b} \mu_i - \mu_2, \beta^2 + \sigma_2^2 + \sum_{i \in A_b} \beta^2 + \sigma_i^2 \Big) }
+\end{split}
+\end{equation*}
+\normalsize
+\onslide<6->{
+\begin{equation}
+ m_{f_{t_a} \rightarrow p_1}(p_1) = \Phi\Big(p_1| \mu_1-\delta, \vartheta -  \beta^2 + \sigma_1^2 \Big) 
+\end{equation}
+}
+
+}
+
+ 
+\end{frame}
+
+
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large $\bm{m_{f_p \rightarrow s}(s)}$
+\end{center}
+\end{textblock}
+\vspace{0.75cm}
+
+\Wider[4em]{
+\small
+\begin{equation*}
+\begin{split}
+m_{f_{p_1} \rightarrow s_1}(s_1) =& \int N(p_1| s_1, \beta^2) \Phi\Big(p_1| \mu_1-\delta, \vartheta -  \beta^2 + \sigma_1^2 \Big)   dp_1 \\[0.3cm]
+\onslide<2->{\frac{\partial m_{f_{p_1} \rightarrow s_1}(s_1)}{\partial \mu_1}  &\overset{1}{=} \int N(p_1| s_1, \beta^2) N\Big(p_1| \mu_1-\delta, \vartheta -  \beta^2 + \sigma_1^2 \Big)   dp_1 \\}
+\onslide<3->{&\overset{*}{=} N\Big(s_1| \mu_1-\delta, \vartheta - \sigma_1^2 \Big) }
+\end{split}
+\end{equation*}
+\vspace{0.25cm}
+\normalsize
+\onslide<4->{
+\begin{equation}
+\begin{split}
+m_{f_{p_1} \rightarrow s_1}(s_1) &\overset{2}{=} \Phi\Big(s_1| \mu_1-\delta, \vartheta - \sigma_1^2 \Big) \\
+\onslide<5->{&\overset{3}{=} \Phi\Big(\underbrace{\delta-\mu_1+s_1}_{\hfrac{\text{Diferencia}}{\text{parametrizada} } \ \delta(s_i)}| 0, \vartheta - \sigma_1^2 \Big)}
+\end{split}
+\end{equation}
+}
+}
+ 
+\end{frame}
+
+\subsection{Posterior}
+
+\begin{frame}
+\begin{textblock}{128}(0,10)
+\begin{center}
+ \large Posterior
+\end{center}
+\end{textblock}
+\vspace{1cm}
+ 
+\Wider[4em]{ 
+\begin{equation}
+ P(s_i \mid \bm{o}, A) \propto 
+ \begin{cases}
+  N(s_i \, | \, \mu_i, \sigma_i^2) \, \Phi(\delta(s_i) \, | \, 0, \vartheta - \sigma_i^2) & \text{Si gana} \\
+  N(s_i \, | \, \mu_i, \sigma_i^2 ) \, (1 - \Phi(\delta(s_i) \, | \, 0, \vartheta - \sigma_i^2)) & \text{Si pierde}
+ \end{cases}
+\end{equation}
+\pause
+\vspace{-0.5cm}
+
+  \begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.49\textwidth}
+       \includegraphics[page=2,width=\textwidth]{figures/posterior_ganador} 
+     \end{subfigure}
+     \begin{subfigure}[b]{0.49\textwidth}
+       \includegraphics[page=2,width=\textwidth]{figures/posterior_perdedor} 
+     \end{subfigure}
+   \end{figure} 
+}
+
+\end{frame}
+
+\subsection{Trabajo futuro}
+
+\begin{frame}
+ \begin{textblock}{128}(0,10)
+\begin{center}
+ \large Trabajo futuro
+\end{center}
+\end{textblock}
+\vspace{1cm}
+
+
+  {\normalsize Debilidades de TrueSkill}
+ 
+
+ \begin{enumerate}
+ 
+  \item El modelo $t \sim \sum_{i \in A_e} p_i$ genera sobrestimaci\'on por sinergia.
+  \begin{equation}
+   \frac{\text{Sinergia total}}{\text{Tamaño del equipo}} \text{Proporci\'on de partidas jugadas en equipo}
+  \end{equation}
+
+  \item Resultado ganador/perdedor como \'uncio dato observable
+  
+  \item Posterior aproximada
+  
+ \end{enumerate}
+ 
+\end{frame}
+
+\section{Gracias}
+
+\begin{frame}
+ 
+ \begin{center}
+  \Large Gracias
+ \end{center}
+
+ \begin{figure}[H]     
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+       \includegraphics[width=\textwidth]{images/pachacuteckoricancha.jpg} 
+     \end{subfigure}
+   \end{figure} 
+  
+\end{frame}
+
+
+\end{document}
+
+
+

@@ -1,0 +1,38 @@
+\tikz{ %
+        
+        \node[latent] (x3) {$\times$} ; %
+        \node[const, left=of x3] () {$x_3$}; %
+        
+        \node[det, below=of x3,xshift=-1.5cm] (sC) {$\sum_{\setminus x_3}$}; %
+        \node[det, below=of x3] (sD) {$\sum_{\setminus x_3}$}; %
+        \node[det, below=of x3,xshift=1.5cm] (sE) {$\sum_{\setminus x_3}$}; %
+       
+        \node[factor, below=of sC,fill=black!0] (fC) {$\times$} ;
+        \node[const, left=of fC] () {$f_C$}; %
+        \node[factor, below=of sD] (fD) {} ;
+        \node[const, left=of fD] () {$f_D$}; %
+        \node[factor, below=of sE] (fE) {} ;
+        \node[const, right=of fE] () {$f_E$}; %
+        
+        \node[latent, below=of fC,xshift=-1.5cm,fill=black!10] (x1) {$\times$} ; %
+        \node[const, left=of x1] () {$x_1$}; %
+        \node[latent, below=of fC,fill=black!10] (x2) {$\times$} ; %
+        \node[const, left=of x2] () {$x_2$}; %
+        
+        \node[det, below=of x1, fill=black!10] (sA) {$\sum_{\setminus x_1}$}; %
+        \node[det, below=of x2, fill=black!10] (sB) {$\sum_{\setminus x_2}$}; %
+         
+        \node[factor, below=of sA] (fA) {} ; 
+        \node[const, left=of fA] () {$f_A$}; %              
+        \node[factor, below=of sB] (fB) {} ;
+        \node[const, left=of fB] () {$f_B$}; %     
+        
+	\edge[-] {x3} {sC,sD,sE};
+	\edge[-] {sC} {fC};\edge[-] {sD} {fD};\edge[-] {sE} {fE};
+        \edge[-] {fC} {x1,x2};
+	\edge[-] {x1} {sA}; \edge[-] {x2} {sB};
+	\edge[-] {sA} {fA};\edge[-] {sB} {fB};
+        
+	
+	
+        }
